@@ -670,7 +670,71 @@ function renderSalaryCounter() {
         !(loadedStream.isEmployee || loadedStream.isEmployer);
 }
 
-function renderStreamDetails(streamId, stream) {
+async function fillEmployeeSettlement(
+    activeContract,
+    streamId,
+    grossSettled,
+    blockNumber,
+    valueElement
+) {
+    if (grossSettled === 0n) {
+        valueElement.textContent = "0.000000 ETH";
+        valueElement.title = "0 ETH";
+        return;
+    }
+
+    try {
+        const [withdrawals, cancellations] = await Promise.all([
+            activeContract.queryFilter(
+                activeContract.filters.SalaryWithdrawn(streamId),
+                0,
+                blockNumber
+            ),
+            activeContract.queryFilter(
+                activeContract.filters.StreamCancelled(streamId),
+                0,
+                blockNumber
+            )
+        ]);
+
+        let grossFromEvents = 0n;
+        let employeeReceived = 0n;
+
+        for (const event of withdrawals) {
+            grossFromEvents += event.args.grossAmount;
+            employeeReceived += event.args.employeeAmount;
+        }
+
+        for (const event of cancellations) {
+            grossFromEvents +=
+                event.args.employeeAmount + event.args.fee;
+
+            employeeReceived += event.args.employeeAmount;
+        }
+
+        if (grossFromEvents !== grossSettled) {
+            valueElement.textContent = "History unavailable";
+            valueElement.title =
+                "Available payment events do not match the " +
+                "stored settlement. Earlier history may be missing.";
+            return;
+        }
+
+        valueElement.textContent =
+            `${formatDisplayEth(employeeReceived)} ETH`;
+
+        valueElement.title =
+            `${ethers.formatEther(employeeReceived)} ETH`;
+    } catch (error) {
+        valueElement.textContent = "Could not load";
+        valueElement.title =
+            "Load the stream again to retry payment history.";
+
+        console.error("Stream payment history:", error);
+    }
+}
+
+function renderStreamDetails(streamId, stream, blockNumber) {
     streamDetails.replaceChildren();
 
     const heading = document.createElement("h3");
@@ -694,6 +758,8 @@ function renderStreamDetails(streamId, stream) {
 
         field.append(term, description);
         fields.appendChild(field);
+
+        return description;
     }
 
     const shortAddress =
@@ -718,11 +784,38 @@ function renderStreamDetails(streamId, stream) {
         formatDuration(stream.duration)
     );
 
-    addField(
-        "Salary settled · before fees",
-        `${formatDisplayEth(stream.totalWithdrawn)} ETH`,
-        `${ethers.formatEther(stream.totalWithdrawn)} ETH`
-    );
+        if (loadedStream.isEmployee) {
+        const paymentValue = addField(
+            "Salary settled · after fees",
+            "Loading…"
+        );
+
+        fillEmployeeSettlement(
+            contract,
+            streamId,
+            stream.totalWithdrawn,
+            blockNumber,
+            paymentValue
+        );
+    } else {
+        addField(
+            "Salary settled · before fees",
+            `${formatDisplayEth(stream.totalWithdrawn)} ETH`,
+            `${ethers.formatEther(stream.totalWithdrawn)} ETH`
+        );
+    }
+
+    if (loadedStream.isEmployer) {
+        const refundReceived = stream.closed
+            ? stream.totalDeposit - stream.totalWithdrawn
+            : 0n;
+
+        addField(
+            "Refund received",
+            `${formatDisplayEth(refundReceived)} ETH`,
+            `${ethers.formatEther(refundReceived)} ETH`
+        );
+    }
 
     streamDetails.append(heading, fields);
 }
@@ -774,7 +867,7 @@ async function loadStream(streamId) {
         walletAddress.toLowerCase() === stream.employer.toLowerCase()
     };
 
-    renderStreamDetails(streamId, stream);
+    renderStreamDetails(streamId, stream, block.number);
 
     renderSalaryCounter();
     salaryTimer = setInterval(renderSalaryCounter, 1000);
