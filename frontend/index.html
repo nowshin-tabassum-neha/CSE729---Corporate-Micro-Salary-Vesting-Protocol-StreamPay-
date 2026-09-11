@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPay</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <h1>StreamPay</h1>
+    <p>Salary payments that unlock over time.</p>
+
+    <section>
+        <h2>Wallet connection</h2>
+
+        <button id="connectButton" type="button">
+            Connect MetaMask
+        </button>
+
+        <p id="walletStatus">Wallet not connected.</p>
+        <p id="networkStatus">Network not checked.</p>
+        <p id="roleStatus">Role not checked.</p>
+    </section>
+
+    <section>
+        <section id="contractPanel" hidden>
+
+        <p>
+            StreamPay address:
+            <code>0x5FbDB2315678afecb367f032d93F642f64180aa3</code>
+        </p>
+
+        <p id="contractStatus">Contract not checked.</p>
+    </section>
+
+    <section id="companyPanel" hidden>
+        <h2>Register your company</h2>
+
+        <p class="registration-intro">
+            Create your company profile to register employees
+            and start paying salaries.
+        </p>
+
+        <form id="companyForm">
+            <div>
+            <label for="companyName">Company name</label>
+            <input
+                id="companyName"
+                type="text"
+                placeholder="Example Ltd"
+                required
+            >
+            </div>
+
+            <button id="registerCompanyButton" type="submit">
+            Register company
+            </button>
+        </form>
+
+        <p id="companyStatus">
+            Your connected wallet will become the company owner.
+            Confirm registration in MetaMask.
+        </p>
+ </section>
+
+
+    <section id="employeePanel" hidden>
+        <h2>Register an employee</h2>
+
+        <form id="employeeForm">
+            <label for="employeeAddress">Employee wallet address</label>
+
+            <input
+                id="employeeAddress"
+                type="text"
+                placeholder="0x..."
+                required
+            >
+
+            <button id="registerEmployeeButton" type="submit">
+                Register employee
+            </button>
+        </form>
+
+        <p id="employeeStatus">
+            Enter the employee's public wallet address.
+        </p>
+    </section>
+
+
+    <section id="createStreamPanel" hidden>
+    
+        <h2>Create a salary stream</h2>
+
+        <form id="streamForm">
+            <p>
+                <label for="streamEmployee">Employee wallet address</label>
+                <input
+                    id="streamEmployee"
+                    type="text"
+                    placeholder="0x..."
+                    required
+                >
+            </p>
+
+            <p>
+                <label for="streamDuration">Duration in seconds</label>
+                <input
+                    id="streamDuration"
+                    type="number"
+                    min="16"
+                    step="1"
+                    value="600"
+                    required
+                >
+            </p>
+
+            <p>
+                <label for="streamAmount">Salary deposit in ETH</label>
+                <input
+                    id="streamAmount"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="1.0"
+                    required
+                >
+            </p>
+
+            <button id="createStreamButton" type="submit" disabled>
+                Create salary stream
+            </button>
+        </form>
+
+        <p id="streamStatus">
+            Stream creation will be enabled after we connect this form.
+        </p>
+   </section>
+   
+   <section id="totalsPanel" hidden>
+        <h2 id="totalsTitle">Account overview</h2>
+
+        <div class="totals-grid">
+            <div class="total-card">
+            <p id="totalLabelOne" class="total-label">—</p>
+            <p class="total-amount">
+                <span id="totalValueOne">—</span>
+                <span class="total-unit">ETH</span>
+            </p>
+            </div>
+
+            <div class="total-card">
+            <p id="totalLabelTwo" class="total-label">—</p>
+            <p class="total-amount">
+                <span id="totalValueTwo">—</span>
+                <span class="total-unit">ETH</span>
+            </p>
+            </div>
+
+            <div id="totalCardThree" class="total-card" hidden>
+            <p id="totalLabelThree" class="total-label">—</p>
+            <p class="total-amount">
+                <span id="totalValueThree">—</span>
+                <span class="total-unit">ETH</span>
+            </p>
+            </div>
+        </div>
+
+        <p id="totalsStatus" class="totals-note">
+            Loading account totals…
+        </p>
+    </section>
+
+   <section id="streamListsPanel" hidden>
+        <h2>Salary streams</h2>
+
+        <button id="refreshStreamsButton" type="button">
+            Refresh stream lists
+        </button>
+
+        <p id="streamListsStatus"></p>
+        <p id="syncStatus">Live updates not connected.</p>
+
+        <div id="outgoingStreamsPanel" hidden>
+            <h3>Salaries you fund</h3>
+            <ul id="outgoingStreams"></ul>
+            </div>
+
+            <div id="incomingStreamsPanel" hidden>
+            <h3>Your salary streams</h3>
+            <ul id="incomingStreams"></ul>
+            </div>
+
+            <div id="adminStreamsPanel" hidden>
+            <h3>Open streams</h3>
+            <ul id="adminOpenStreams"></ul>
+
+            <h3>Closed streams</h3>
+            <ul id="adminClosedStreams"></ul>
+        </div>
+    </section>
+
+   <section id="streamViewerPanel" hidden>
+        <h2>View a salary stream</h2>
+
+        <form id="viewStreamForm">
+            <label for="viewStreamId">Stream ID</label>
+            <input
+                id="viewStreamId"
+                type="number"
+                min="1"
+                step="1"
+                value="1"
+                required
+            >
+            <button type="submit">Load stream</button>
+        </form>
+
+        <div id="streamDetails">No stream loaded.</div>
+        <p id="salaryCounter">No stream loaded.</p>
+
+            <div id="salaryVisual" hidden>
+            <div class="salary-heading">
+                <span>Available to claim</span>
+                <span id="streamBadge" class="status-badge">Streaming</span>
+            </div>
+
+            <div class="salary-amount">
+                <span id="claimableValue">0.000000</span>
+                <span class="currency-label">ETH</span>
+            </div>
+
+            <p id="netSalary" class="salary-caption"></p>
+
+            <div class="progress-heading">
+                <span>Salary unlocked</span>
+                <strong id="progressPercentage">0%</strong>
+            </div>
+
+            <progress
+                id="salaryProgress"
+                max="100"
+                value="0"
+                aria-label="Percentage of salary unlocked"
+            ></progress>
+
+            <p id="streamTime" class="salary-caption"></p>
+        </div>
+
+
+        <button id="withdrawButton" type="button" disabled>
+            Withdraw vested funds
+        </button> 
+
+        <p id="withdrawStatus"></p>
+
+        <button id="cancelStreamButton" type="button" disabled>
+            Cancel stream
+        </button>
+
+        <p id="cancelStatus"></p>
+    </section>
+
+        <section id="adminPanel" hidden>
+        <h2>Protocol fees</h2>
+
+        <p id="adminFeeDisplay">Fees not loaded.</p>
+
+        <button id="refreshFeesButton" type="button">
+            Refresh fees
+        </button>
+
+        <button id="claimFeesButton" type="button" disabled>
+            Claim admin fees
+        </button>
+
+        <p id="adminFeeStatus"></p>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.17.0/dist/ethers.umd.min.js"></script>
+    <script src="./app.js?v=2"></script>
+</body>
+</html>
