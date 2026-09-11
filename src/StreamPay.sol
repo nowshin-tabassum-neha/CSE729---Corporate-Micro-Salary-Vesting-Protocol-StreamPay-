@@ -32,17 +32,10 @@ contract StreamPay {
 
     uint256 public adminFeeBalance;
     bool private entered;
-    
-    event CompanyRegistered(
-        uint256 indexed companyId,
-        address indexed owner,
-        string name
-    );
 
-    event EmployeeRegistered(
-        uint256 indexed companyId,
-        address indexed employee
-    );
+    event CompanyRegistered(uint256 indexed companyId, address indexed owner, string name);
+
+    event EmployeeRegistered(uint256 indexed companyId, address indexed employee);
 
     event StreamCreated(
         uint256 indexed streamId,
@@ -52,20 +45,13 @@ contract StreamPay {
         uint256 totalDeposit,
         uint256 startTime,
         uint256 duration
-    ); 
+    );
 
     event SalaryWithdrawn(
-        uint256 indexed streamId,
-        address indexed employee,
-        uint256 grossAmount,
-        uint256 employeeAmount,
-        uint256 fee
-    ); 
-
-    event AdminFeesClaimed(
-        address indexed admin,
-        uint256 amount
+        uint256 indexed streamId, address indexed employee, uint256 grossAmount, uint256 employeeAmount, uint256 fee
     );
+
+    event AdminFeesClaimed(address indexed admin, uint256 amount);
 
     event StreamCancelled(
         uint256 indexed streamId,
@@ -90,47 +76,29 @@ contract StreamPay {
     }
 
     function registerCompany(string memory name) public {
-        require(
-            companyIdOf[msg.sender] == 0,
-            "Wallet already has a company"
-        );
+        require(companyIdOf[msg.sender] == 0, "Wallet already has a company");
 
-        require(
-            bytes(name).length > 0,
-            "Company name is required"
-        );
+        require(bytes(name).length > 0, "Company name is required");
 
         uint256 companyId = nextCompanyId;
 
         nextCompanyId = nextCompanyId + 1;
 
-        companies[companyId] = Company({
-            owner: msg.sender,
-            name: name
-        });
+        companies[companyId] = Company({owner: msg.sender, name: name});
 
         companyIdOf[msg.sender] = companyId;
-        
+
         emit CompanyRegistered(companyId, msg.sender, name);
     }
 
     function registerEmployee(address employee) public {
         uint256 companyId = companyIdOf[msg.sender];
 
-        require(
-            companyId != 0,
-            "Register a company first"
-        );
+        require(companyId != 0, "Register a company first");
 
-        require(
-            employee != address(0),
-            "Invalid employee address"
-        );
+        require(employee != address(0), "Invalid employee address");
 
-        require(
-            !employees[companyId][employee],
-            "Employee already registered"
-        );
+        require(!employees[companyId][employee], "Employee already registered");
 
         employees[companyId][employee] = true;
 
@@ -140,25 +108,13 @@ contract StreamPay {
     function createStream(address employee, uint256 duration) public payable returns (uint256) {
         uint256 companyId = companyIdOf[msg.sender];
 
-        require(
-            companyId != 0,
-            "Register a company first"
-        );
+        require(companyId != 0, "Register a company first");
 
-        require(
-            employees[companyId][employee],
-            "Employee not registered under your company"
-        );
+        require(employees[companyId][employee], "Employee not registered under your company");
 
-        require(
-            msg.value > 0,
-            "Deposit must be greater than zero"
-        );
+        require(msg.value > 0, "Deposit must be greater than zero");
 
-        require(
-            duration > 15,
-            "Duration must exceed 15 seconds"
-        );
+        require(duration > 15, "Duration must exceed 15 seconds");
 
         uint256 streamId = nextStreamId;
         nextStreamId = nextStreamId + 1;
@@ -174,24 +130,13 @@ contract StreamPay {
             closed: false
         });
 
-        emit StreamCreated(
-            streamId,
-            companyId,
-            employee,
-            msg.sender,
-            msg.value,
-            block.timestamp,
-            duration
-        );
+        emit StreamCreated(streamId, companyId, employee, msg.sender, msg.value, block.timestamp, duration);
 
         return streamId;
     }
 
     function getUnlockedAmount(uint256 streamId) public view returns (uint256) {
-        require(
-            streamId > 0 && streamId < nextStreamId,
-            "Stream does not exist"
-        );
+        require(streamId > 0 && streamId < nextStreamId, "Stream does not exist");
 
         Stream storage stream = streams[streamId];
 
@@ -213,30 +158,18 @@ contract StreamPay {
     }
 
     function withdraw(uint256 streamId) public nonReentrant {
-        require(
-            streamId > 0 && streamId < nextStreamId,
-            "Stream does not exist"
-        );
+        require(streamId > 0 && streamId < nextStreamId, "Stream does not exist");
 
         Stream storage stream = streams[streamId];
 
-        require(
-            msg.sender == stream.employee,
-            "Only the employee can withdraw"
-        );
+        require(msg.sender == stream.employee, "Only the employee can withdraw");
 
-        require(
-            !stream.closed,
-            "Stream is closed"
-        );
+        require(!stream.closed, "Stream is closed");
 
         uint256 unlocked = getUnlockedAmount(streamId);
         uint256 grossAmount = unlocked - stream.totalWithdrawn;
 
-        require(
-            grossAmount > 0,
-            "No salary available"
-        );
+        require(grossAmount > 0, "No salary available");
 
         uint256 fee = grossAmount / 100;
         uint256 employeeAmount = grossAmount - fee;
@@ -248,64 +181,37 @@ contract StreamPay {
             stream.closed = true;
         }
 
-        emit SalaryWithdrawn(
-            streamId,
-            stream.employee,
-            grossAmount,
-            employeeAmount,
-            fee
-        );
+        emit SalaryWithdrawn(streamId, stream.employee, grossAmount, employeeAmount, fee);
 
-        (bool success, ) = payable(stream.employee).call{
-            value: employeeAmount
-        }("");
+        (bool success,) = payable(stream.employee).call{value: employeeAmount}("");
 
         require(success, "ETH transfer failed");
-
     }
 
     function claimAdminFees() public nonReentrant {
-        require(
-            msg.sender == admin,
-            "Only admin can claim fees"
-        );
+        require(msg.sender == admin, "Only admin can claim fees");
 
         uint256 amount = adminFeeBalance;
 
-        require(
-            amount > 0,
-            "No fees available"
-        );
+        require(amount > 0, "No fees available");
 
         adminFeeBalance = 0;
 
         emit AdminFeesClaimed(admin, amount);
 
-        (bool success, ) = payable(admin).call{
-            value: amount
-        }("");
+        (bool success,) = payable(admin).call{value: amount}("");
 
         require(success, "Admin fee transfer failed");
     }
 
     function cancelStream(uint256 streamId) public nonReentrant {
-        require(
-            streamId > 0 && streamId < nextStreamId,
-            "Stream does not exist"
-        );
+        require(streamId > 0 && streamId < nextStreamId, "Stream does not exist");
 
         Stream storage stream = streams[streamId];
 
-        require(
-            msg.sender == stream.employer ||
-            msg.sender == stream.employee,
-            "Only employer or employee can cancel"
-        );
+        require(msg.sender == stream.employer || msg.sender == stream.employee, "Only employer or employee can cancel");
 
-        require(
-            !stream.closed,
-            "Stream is closed"
-        );
+        require(!stream.closed, "Stream is closed");
 
         uint256 unlocked = getUnlockedAmount(streamId);
         uint256 grossAmount = unlocked - stream.totalWithdrawn;
@@ -318,26 +224,16 @@ contract StreamPay {
         stream.closed = true;
         adminFeeBalance = adminFeeBalance + fee;
 
-        emit StreamCancelled(
-            streamId,
-            msg.sender,
-            employeeAmount,
-            employerRefund,
-            fee
-        );
+        emit StreamCancelled(streamId, msg.sender, employeeAmount, employerRefund, fee);
 
         if (employeeAmount > 0) {
-            (bool employeePaid, ) = payable(stream.employee).call{
-                value: employeeAmount
-            }("");
+            (bool employeePaid,) = payable(stream.employee).call{value: employeeAmount}("");
 
             require(employeePaid, "Employee payment failed");
         }
 
         if (employerRefund > 0) {
-            (bool employerPaid, ) = payable(stream.employer).call{
-                value: employerRefund
-            }("");
+            (bool employerPaid,) = payable(stream.employer).call{value: employerRefund}("");
 
             require(employerPaid, "Employer refund failed");
         }

@@ -29,8 +29,7 @@ contract StreamPayTest is Test {
 
         assertEq(companyId, 1);
 
-        (address owner, string memory name) =
-            streamPay.companies(companyId);
+        (address owner, string memory name) = streamPay.companies(companyId);
 
         assertEq(owner, employer);
         assertEq(name, "Example Ltd");
@@ -41,9 +40,7 @@ contract StreamPayTest is Test {
         vm.prank(employer);
         streamPay.registerCompany("Example Ltd");
 
-        vm.expectRevert(
-            bytes("Wallet already has a company")
-        );
+        vm.expectRevert(bytes("Wallet already has a company"));
 
         vm.prank(employer);
         streamPay.registerCompany("Another Company");
@@ -57,10 +54,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(employee);
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 100);
 
         vm.stopPrank();
 
@@ -96,10 +90,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(employee);
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 100);
 
         vm.stopPrank();
 
@@ -139,10 +130,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(employee);
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 100);
 
         vm.stopPrank();
 
@@ -193,10 +181,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(employee);
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 100);
 
         vm.stopPrank();
 
@@ -224,10 +209,7 @@ contract StreamPayTest is Test {
         // No prank: the caller is this test contract, the admin.
         streamPay.claimAdminFees();
 
-        assertEq(
-            address(this).balance,
-            adminBalanceBefore + 0.005 ether
-        );
+        assertEq(address(this).balance, adminBalanceBefore + 0.005 ether);
 
         assertEq(streamPay.adminFeeBalance(), 0);
         assertEq(address(streamPay).balance, 0.5 ether);
@@ -255,23 +237,17 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
 
         // The employee has not been registered yet.
-        vm.expectRevert(
-            bytes("Employee not registered under your company")
-        );
+        vm.expectRevert(bytes("Employee not registered under your company"));
         streamPay.createStream{value: 1 ether}(employee, 100);
 
         streamPay.registerEmployee(employee);
 
         // No ETH is attached.
-        vm.expectRevert(
-            bytes("Deposit must be greater than zero")
-        );
+        vm.expectRevert(bytes("Deposit must be greater than zero"));
         streamPay.createStream(employee, 100);
 
         // Exactly 15 seconds is not allowed.
-        vm.expectRevert(
-            bytes("Duration must exceed 15 seconds")
-        );
+        vm.expectRevert(bytes("Duration must exceed 15 seconds"));
         streamPay.createStream{value: 1 ether}(employee, 15);
 
         // Failed calls must not keep deposits or consume stream IDs.
@@ -280,10 +256,7 @@ contract StreamPayTest is Test {
         assertEq(streamPay.nextStreamId(), 1);
 
         // The smallest allowed integer duration is 16 seconds.
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            16
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 16);
 
         vm.stopPrank();
 
@@ -300,24 +273,17 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(employee);
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 100);
 
         vm.stopPrank();
 
         vm.warp(block.timestamp + 50);
 
-        vm.expectRevert(
-            bytes("Only the employee can withdraw")
-        );
+        vm.expectRevert(bytes("Only the employee can withdraw"));
         vm.prank(outsider);
         streamPay.withdraw(streamId);
 
-        vm.expectRevert(
-            bytes("Only employer or employee can cancel")
-        );
+        vm.expectRevert(bytes("Only employer or employee can cancel"));
         vm.prank(outsider);
         streamPay.cancelStream(streamId);
 
@@ -333,7 +299,6 @@ contract StreamPayTest is Test {
         assertEq(streamPay.adminFeeBalance(), 0.005 ether);
     }
 
-
     function test_EmployeeCanCancel() public {
         vm.deal(employer, 10 ether);
 
@@ -342,10 +307,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(employee);
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            employee,
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(employee, 100);
 
         vm.stopPrank();
 
@@ -373,8 +335,7 @@ contract StreamPayTest is Test {
     }
 
     function test_FailedPaymentRollsBack() public {
-        TestSalaryRecipient recipient =
-            new TestSalaryRecipient(streamPay);
+        TestSalaryRecipient recipient = new TestSalaryRecipient(streamPay);
 
         vm.deal(employer, 10 ether);
         vm.startPrank(employer);
@@ -382,10 +343,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(address(recipient));
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            address(recipient),
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(address(recipient), 100);
 
         vm.stopPrank();
 
@@ -410,8 +368,7 @@ contract StreamPayTest is Test {
     }
 
     function test_ReentrantWithdrawalIsBlocked() public {
-        TestSalaryRecipient recipient =
-            new TestSalaryRecipient(streamPay);
+        TestSalaryRecipient recipient = new TestSalaryRecipient(streamPay);
 
         vm.deal(employer, 10 ether);
         vm.startPrank(employer);
@@ -419,10 +376,7 @@ contract StreamPayTest is Test {
         streamPay.registerCompany("Example Ltd");
         streamPay.registerEmployee(address(recipient));
 
-        uint256 streamId = streamPay.createStream{value: 1 ether}(
-            address(recipient),
-            100
-        );
+        uint256 streamId = streamPay.createStream{value: 1 ether}(address(recipient), 100);
 
         vm.stopPrank();
 
@@ -430,11 +384,7 @@ contract StreamPayTest is Test {
 
         recipient.configure(streamId, false, true);
 
-        vm.expectCall(
-            address(streamPay),
-            abi.encodeWithSignature("withdraw(uint256)", streamId),
-            2
-        );
+        vm.expectCall(address(streamPay), abi.encodeWithSignature("withdraw(uint256)", streamId), 2);
 
         recipient.claim();
 
@@ -460,11 +410,7 @@ contract TestSalaryRecipient {
         streamPay = target;
     }
 
-    function configure(
-        uint256 id,
-        bool reject,
-        bool reenter
-    ) external {
+    function configure(uint256 id, bool reject, bool reenter) external {
         streamId = id;
         rejectPayment = reject;
         attemptReentry = reenter;
